@@ -19,7 +19,7 @@ type Project struct {
 }
 
 func main() {
-	orm.OpenDB(orm.DBDriverSqlite, "todolist.db")
+	orm.ConnectDB(orm.DBDriverSqlite, "todolist.db")
 	orm.RegisterModel(Todo{}, Project{})
 
 	r := router.NewRouter()

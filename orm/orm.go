@@ -23,8 +23,8 @@ var DB *gorm.DB
 
 var logger = log.ZoneLogger("crud/orm")
 
-// OpenDB initializes the global DB instance
-func OpenDB(driver DBDriver, dsn string) (*gorm.DB, error) {
+// ConnectDB initializes the global DB instance
+func ConnectDB(driver DBDriver, dsn string) (*gorm.DB, error) {
 	var err error
 
 	driverOpen := getDBOpener(driver)
