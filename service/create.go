@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/cdfmlr/crud/log"
+	"context"
 	"github.com/cdfmlr/crud/orm"
 	"gorm.io/gorm"
 )
@@ -26,11 +26,11 @@ import (
 //    group := GetByID[Group](123)
 //    Create(&user, NestInto(&group, "users"))
 //    // user is already in the database: just add it into group.users
-func Create(model any, in CreateMode) error {
-	return in(model)
+func Create(ctx context.Context, model any, in CreateMode) error {
+	return in(ctx, model)
 }
 
-type CreateMode func(modelToCreate any) error
+type CreateMode func(ctx context.Context, modelToCreate any) error
 
 // NestInto creates a nested model of the parent model in the database.
 // Say, if you have a model User and a model Profile:
@@ -51,16 +51,25 @@ type CreateMode func(modelToCreate any) error
 //
 // This is useful to handle POSTs like /api/users/{user_id}/profile
 func NestInto(parent any, field string) CreateMode {
-	return func(modelToCreate any) error {
-		return orm.DB.Session(&gorm.Session{FullSaveAssociations: true}).
+	return func(ctx context.Context, modelToCreate any) error {
+		logger.WithContext(ctx).
+			WithField("parent", parent).
+			WithField("field", field).
+			WithField("modelToCreate", modelToCreate).
+			Trace("Create Nested")
+
+		return orm.DB.WithContext(ctx).Session(&gorm.Session{FullSaveAssociations: true}).
 			Model(parent).Association(field).Append(modelToCreate)
 	}
 }
 
 // IfNotExist creates a model if it does not exist.
 func IfNotExist() CreateMode {
-	return func(modelToCreate any) error {
-		log.Logger.Debugf("service Create: %#v", modelToCreate)
-		return orm.DB.Create(modelToCreate).Error
+	return func(ctx context.Context, modelToCreate any) error {
+		logger.WithContext(ctx).
+			WithField("modelToCreate", modelToCreate).
+			Trace("Create IfNotExist")
+
+		return orm.DB.WithContext(ctx).Create(modelToCreate).Error
 	}
 }

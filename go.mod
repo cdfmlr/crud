@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.8.1
+	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/sirupsen/logrus v1.4.2
 	gorm.io/driver/mysql v1.3.5
 	gorm.io/driver/postgres v1.3.8

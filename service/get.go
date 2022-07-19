@@ -1,7 +1,9 @@
 package service
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"github.com/cdfmlr/crud/orm"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -26,12 +28,27 @@ import (
 //     SELECT * FROM sessions WHERE user_id = 10;  // into user.Sessions
 // Because this getting model by id is a common operation, a shortcut GetByID
 // is provided. (but you still have to add Preload options if needed)
-func Get[T any](dest any, options ...QueryOption) error {
-	query := orm.DB.Model(new(T))
+func Get[T any](ctx context.Context, dest any, options ...QueryOption) error {
+	vT := *new(T)
+	logger := logger.WithContext(ctx).
+		WithField("model", fmt.Sprintf("%T", vT)).
+		WithField("dest", fmt.Sprintf("%T", dest))
+
+	logger.Trace("Get model into dest")
+
+	query := orm.DB.WithContext(ctx).Model(new(T))
 	for _, option := range options {
 		query = option(query)
 	}
 	ret := query.Take(dest)
+
+	if ret.Error != nil {
+		logger.WithError(ret.Error).
+			WithField("model", fmt.Sprintf("%T", vT)).
+			WithField("dest", fmt.Sprintf("%T", dest)).
+			Warnf("Get[%T] into %T failed", vT, dest)
+	}
+
 	return ret.Error
 }
 
@@ -40,16 +57,22 @@ func Get[T any](dest any, options ...QueryOption) error {
 // Notice: "id" here is the column (or field) name of the primary key of the
 // model which is indicated by the Identity method of orm.Model.
 // So GetByID only works for models that implement the orm.Model interface.
-func GetByID[T orm.Model](id any, dest any, options ...QueryOption) error {
+func GetByID[T orm.Model](ctx context.Context, id any, dest any, options ...QueryOption) error {
+	logger.WithContext(ctx).WithField("model", fmt.Sprintf("%T", *new(T))).
+		WithField("dest", fmt.Sprintf("%T", dest)).
+		Trace("GetByID: Get model by id")
+
 	if id == nil {
+		logger.WithContext(ctx).Warn("GetByID skipped: id is nil")
 		return ErrNilID
 	}
 	idField, _ := (*new(T)).Identity()
 	if idField == "" {
+		logger.WithContext(ctx).Warn("GetByID skipped: unknown id field")
 		return ErrNoIdentityField
 	}
 	options = append(options, FilterBy(idField, id))
-	return Get[T](dest, options...)
+	return Get[T](ctx, dest, options...)
 }
 
 // GetMany returns a list of models T into dest.
@@ -74,22 +97,39 @@ func GetByID[T orm.Model](id any, dest any, options ...QueryOption) error {
 //         WHERE name = "John"
 //         ORDER BY age desc
 //         LIMIT 10 OFFSET 0;  // into users
-func GetMany[T any](dest any, options ...QueryOption) error {
-	query := orm.DB.Model(new(T))
+func GetMany[T any](ctx context.Context, dest any, options ...QueryOption) error {
+	logger := logger.WithContext(ctx).
+		WithField("model", fmt.Sprintf("%T", *new(T))).
+		WithField("dest", fmt.Sprintf("%T", dest))
+	logger.Trace("GetMany: Get models into dest")
+
+	query := orm.DB.WithContext(ctx).Model(new(T))
 	for _, option := range options {
 		query = option(query)
 	}
 	ret := query.Find(dest)
+	if ret.Error != nil {
+		logger.WithError(ret.Error).
+			Warn("GetMany: Get models into dest failed")
+	}
 	return ret.Error
 }
 
 // Count returns the number of models.
-func Count[T any](options ...QueryOption) (count int64, err error) {
-	query := orm.DB.Model(new(T))
+func Count[T any](ctx context.Context, options ...QueryOption) (count int64, err error) {
+	logger := logger.WithContext(ctx).
+		WithField("model", fmt.Sprintf("%T", *new(T)))
+	logger.Trace("Count: Count models")
+
+	query := orm.DB.WithContext(ctx).Model(new(T))
 	for _, option := range options {
 		query = option(query)
 	}
 	ret := query.Count(&count)
+	if ret.Error != nil {
+		logger.WithError(ret.Error).Warn("Count: Count models failed")
+		err = ret.Error
+	}
 	return count, ret.Error
 }
 

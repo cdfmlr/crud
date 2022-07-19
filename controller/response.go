@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"reflect"
@@ -60,6 +61,8 @@ func getResponseModelName(model any) string {
 		}
 		fallthrough
 	default:
+		logger.WithField("model", fmt.Sprintf("%T", model)).
+			Warn("getResponseModelName: unknown model type, return \"data\"")
 		return "data"
 	}
 }

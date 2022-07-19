@@ -31,6 +31,13 @@ import (
 func Crud[T orm.Model](base gin.IRouter, relativePath string, options ...CrudOption) gin.IRouter {
 	group := base.Group(relativePath)
 
+	if !gin.IsDebugging() { // GIN_MODE == "release"
+		logger.WithField("model", getTypeName[T]()).
+			//WithField("basePath", base). // we cannot get the base path from gin.IRouter
+			WithField("relativePath", relativePath).
+			Info("Crud: Adding CRUD routes for model")
+	}
+
 	options = append(options, crud[T]())
 
 	for _, option := range options {
@@ -67,8 +74,16 @@ func crud[T orm.Model]() CrudOption {
 func GetNested[P orm.Model, N orm.Model](field string) CrudOption {
 	parentIdParam := getIdParam[P]()
 	return func(group *gin.RouterGroup) *gin.RouterGroup {
-		group.GET(
-			fmt.Sprintf("/:%s/%s", parentIdParam, field),
+		relativePath := fmt.Sprintf("/:%s/%s", parentIdParam, field)
+
+		if !gin.IsDebugging() { // GIN_MODE == "release"
+			logger.WithField("parent", getTypeName[P]()).
+				WithField("child", getTypeName[N]()).
+				WithField("relativePath", relativePath).
+				Info("Crud: Adding GET route for getting nested model")
+		}
+
+		group.GET(relativePath,
 			controller.GetFieldHandler[P](parentIdParam, field),
 		)
 		// there is no GET /:parentIdParam/:field/:childIdParam,
@@ -84,8 +99,16 @@ func GetNested[P orm.Model, N orm.Model](field string) CrudOption {
 func CreateNested[P orm.Model, N orm.Model](field string) CrudOption {
 	parentIdParam := getIdParam[P]()
 	return func(group *gin.RouterGroup) *gin.RouterGroup {
-		group.POST(
-			fmt.Sprintf("/:%s/%s", parentIdParam, field),
+		relativePath := fmt.Sprintf("/:%s/%s", parentIdParam, field)
+
+		if !gin.IsDebugging() { // GIN_MODE == "release"
+			logger.WithField("parent", getTypeName[P]()).
+				WithField("child", getTypeName[N]()).
+				WithField("relativePath", relativePath).
+				Info("Crud: Adding POST route for creating nested model")
+		}
+
+		group.POST(relativePath,
 			controller.CreateNestedHandler[P, N](parentIdParam, field),
 		)
 		return group
@@ -98,8 +121,16 @@ func DeleteNested[P orm.Model, T orm.Model](field string) CrudOption {
 	parentIdParam := getIdParam[P]()
 	childIdParam := getIdParam[T]()
 	return func(group *gin.RouterGroup) *gin.RouterGroup {
-		group.DELETE(
-			fmt.Sprintf("/:%s/%s/:%s", parentIdParam, field, childIdParam),
+		relativePath := fmt.Sprintf("/:%s/%s/:%s", parentIdParam, field, childIdParam)
+
+		if !gin.IsDebugging() { // GIN_MODE == "release"
+			logger.WithField("parent", getTypeName[P]()).
+				WithField("child", getTypeName[T]()).
+				WithField("relativePath", relativePath).
+				Info("Crud: Adding DELETE route for deleting nested model")
+		}
+
+		group.DELETE(relativePath,
 			controller.DeleteNestedHandler[P, T](parentIdParam, field, childIdParam),
 		)
 		return group
@@ -124,4 +155,10 @@ func getIdParam[T orm.Model]() string {
 	idParam := modelName + idField
 
 	return idParam
+}
+
+// getTypeName is a helper function to get the type name of a generic type T.
+func getTypeName[T any]() string {
+	model := *new(T)
+	return reflect.TypeOf(model).Name()
 }

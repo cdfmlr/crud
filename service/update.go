@@ -1,19 +1,28 @@
 package service
 
 import (
+	"context"
 	"errors"
-	"github.com/cdfmlr/crud/log"
+	"fmt"
 	"github.com/cdfmlr/crud/orm"
 )
 
 // Update all fields of an existing model in database.
-func Update(model any) (rowsAffected int64, err error) {
+func Update(ctx context.Context, model any) (rowsAffected int64, err error) {
+	logger.WithContext(ctx).
+		WithField("model", model).Trace("Update model")
+
 	if model == nil {
+		logger.WithContext(ctx).
+			Warn("Update: model is nil, nothing to update")
 		return 0, ErrNoRecord
 	}
-	log.Logger.Debugf("service Update: %#v", model)
 
-	result := orm.DB.Save(model)
+	result := orm.DB.WithContext(ctx).Save(model)
+	if result.Error != nil {
+		logger.WithContext(ctx).
+			WithError(result.Error).Warn("Update: failed")
+	}
 	return result.RowsAffected, result.Error
 }
 
@@ -24,11 +33,23 @@ var (
 
 // UpdateField updates a single fields of an existing model in database.
 // It will try to GetByID first, to make sure the model exists, before updating.
-func UpdateField[T orm.Model](id any, field string, value interface{}) (rowsAffected int64, err error) {
+func UpdateField[T orm.Model](ctx context.Context, id any, field string, value interface{}) (rowsAffected int64, err error) {
+	logger.WithContext(ctx).
+		WithField("model", fmt.Sprintf("%T", *new(T))).
+		WithField("id", id).WithField("field", field).
+		WithField("value", value).Trace("UpdateField")
+
 	var record T
-	if err := GetByID[T](id, &record); err != nil {
+	if err := GetByID[T](ctx, id, &record); err != nil {
+		logger.WithContext(ctx).
+			WithField("id", id).WithError(err).
+			Warn("UpdateField: GetByID failed")
 		return 0, err
 	}
-	result := orm.DB.Model(&record).Update(field, value)
+	result := orm.DB.WithContext(ctx).Model(&record).Update(field, value)
+	if result.Error != nil {
+		logger.WithContext(ctx).
+			WithError(result.Error).Warn("UpdateField: failed")
+	}
 	return result.RowsAffected, result.Error
 }

@@ -12,7 +12,7 @@ import (
 // Logger is the logrus logger handler
 //
 // FROM: github.com/toorop/gin-logrus
-func Logger(logger logrus.FieldLogger, notLogged ...string) gin.HandlerFunc {
+func Logger(logger *logrus.Entry, notLogged ...string) gin.HandlerFunc {
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "host"
@@ -33,6 +33,7 @@ func Logger(logger logrus.FieldLogger, notLogged ...string) gin.HandlerFunc {
 		path := c.Request.URL.Path
 
 		start := time.Now()
+		c.Set("start_time", start.String())
 		c.Next()
 		stop := time.Since(start)
 
@@ -50,17 +51,18 @@ func Logger(logger logrus.FieldLogger, notLogged ...string) gin.HandlerFunc {
 			return
 		}
 
-		entry := logger.WithFields(logrus.Fields{
-			"hostname":   hostname,
-			"statusCode": statusCode,
-			"latency":    latency, // time to process
-			"clientIP":   clientIP,
-			"method":     c.Request.Method,
-			"path":       path,
-			"referer":    referer,
-			"dataLength": dataLength,
-			"userAgent":  clientUserAgent,
-		})
+		entry := logger.WithContext(c).
+			WithFields(logrus.Fields{
+				"hostname":   hostname,
+				"statusCode": statusCode,
+				"latency":    latency, // time to process
+				"clientIP":   clientIP,
+				"method":     c.Request.Method,
+				"path":       path,
+				"referer":    referer,
+				"dataLength": dataLength,
+				"userAgent":  clientUserAgent,
+			})
 
 		if len(c.Errors) > 0 {
 			entry.Error(c.Errors.ByType(gin.ErrorTypePrivate).String())

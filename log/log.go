@@ -13,6 +13,7 @@ type Level string
 
 // Log levels.
 const (
+	LevelTrace Level = "trace"
 	LevelDebug Level = "debug"
 	LevelInfo  Level = "info"
 	LevelWarn  Level = "warn"
@@ -28,6 +29,11 @@ var Logger4Gorm *gormlogrus.Logger
 // Logger4Gin is a gin middleware for Logger
 var Logger4Gin gin.HandlerFunc
 
+// ZoneLogger creates a new logger entry with field zone=name
+func ZoneLogger(name string) *logrus.Entry {
+	return Logger.WithField("zone", name)
+}
+
 // UseLogger use given logger instance to initializes global Logger.
 // The Logger instance will be shared by the whole crud package
 // (and the underlying GORM, Gin included)
@@ -38,8 +44,8 @@ func UseLogger(logger *logrus.Logger, options ...LoggerOption) {
 		option(logger)
 	}
 
-	Logger4Gorm = gormlogrus.Use(Logger)
-	Logger4Gin = ginlogrus.Logger(Logger)
+	Logger4Gorm = gormlogrus.Use(ZoneLogger("crud/db"))
+	Logger4Gin = ginlogrus.Logger(ZoneLogger("crud/http"))
 }
 
 // LoggerOption is a function that can be used to configure the global Logger
@@ -59,9 +65,35 @@ func WithLevel(level Level) LoggerOption {
 	}
 }
 
+// WithReportCaller sets the Logger to report the calling function.
+func WithReportCaller(reportCaller bool) LoggerOption {
+	return func(logger *logrus.Logger) {
+		logger.SetReportCaller(reportCaller)
+	}
+}
+
+func WithHook(hook logrus.Hook) LoggerOption {
+	return func(logger *logrus.Logger) {
+		logger.Debugf("WithHook: %v", hook)
+		logger.AddHook(hook)
+	}
+}
+
+// DefaultLoggerOptions = WithLevel(LevelDebug) + WithReportCaller(false)
+//                        + WithHook(RequestIDHook())
+func DefaultLoggerOptions() []LoggerOption {
+	return []LoggerOption{
+		WithLevel(LevelDebug),
+		WithReportCaller(false),
+		WithHook(RequestIDHook()),
+	}
+}
+
 // Level -> logrus.Level
 func getLogrusLevel(level Level) logrus.Level {
 	switch level {
+	case LevelTrace:
+		return logrus.TraceLevel
 	case LevelDebug:
 		return logrus.DebugLevel
 	case LevelInfo:
@@ -85,5 +117,5 @@ func NewLogger(options ...LoggerOption) *logrus.Logger {
 // By default, creates a new logger with LevelDebug,
 // this will be overridden by UseLogger
 func init() {
-	NewLogger(WithLevel(LevelDebug))
+	NewLogger(DefaultLoggerOptions()...)
 }

@@ -21,6 +21,8 @@ const (
 // DB is the global database instance
 var DB *gorm.DB
 
+var logger = log.ZoneLogger("crud/orm")
+
 // OpenDB initializes the global DB instance
 func OpenDB(driver DBDriver, dsn string) (*gorm.DB, error) {
 	var err error
@@ -53,8 +55,11 @@ func getDBOpener(driver DBDriver) DBOpener {
 	case DBDriverPostgres:
 		return postgres.Open
 	default:
-		panic("unknown database driver: " + driver)
+		//panic("unknown database driver: " + driver)
+		logger.WithField("driver", driver).
+			Fatal("unknown database driver")
 	}
+	return nil // unreachable, make compiler happy
 }
 
 // endregion dbOpener
@@ -62,6 +67,8 @@ func getDBOpener(driver DBDriver) DBOpener {
 func RegisterModel(m ...any) error {
 	err := DB.AutoMigrate(m...)
 	if err != nil {
+		logger.WithError(err).
+			Errorf("RegisterModel: AutoMigrate failed")
 		return err
 	}
 	return nil

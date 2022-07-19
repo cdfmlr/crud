@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"github.com/cdfmlr/crud/orm"
 	"github.com/cdfmlr/crud/service"
 	"github.com/gin-gonic/gin"
@@ -24,6 +25,8 @@ func GetListHandler[T any]() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request GetRequestBody
 		if err := c.ShouldBind(&request); err != nil {
+			logger.WithContext(c).WithError(err).
+				Warn("GetListHandler: bind request failed")
 			ResponseError(c, CodeBadRequest, err)
 			return
 		}
@@ -31,16 +34,20 @@ func GetListHandler[T any]() gin.HandlerFunc {
 		options := buildQueryOptions[T](request)
 
 		var dest []*T
-		err := service.GetMany[T](&dest, options...)
+		err := service.GetMany[T](c, &dest, options...)
 		if err != nil {
+			logger.WithContext(c).WithError(err).
+				Warn("GetListHandler: GetMany failed")
 			ResponseError(c, CodeProcessFailed, err)
 			return
 		}
 
 		var addition []gin.H
 		if request.Total {
-			total, err := getCount[T](request.FilterBy, request.FilterValue)
+			total, err := getCount[T](c, request.FilterBy, request.FilterValue)
 			if err != nil {
+				logger.WithContext(c).WithError(err).
+					Warn("GetListHandler: getCount failed")
 				addition = append(addition, gin.H{"totalError": err.Error()})
 			} else {
 				addition = append(addition, gin.H{"total": total})
@@ -56,6 +63,8 @@ func GetByIDHandler[T orm.Model](idParam string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request GetRequestBody
 		if err := c.ShouldBind(&request); err != nil {
+			logger.WithContext(c).WithError(err).
+				Warn("GetByIDHandler: bind request failed")
 			ResponseError(c, CodeBadRequest, err)
 			return
 		}
@@ -64,6 +73,8 @@ func GetByIDHandler[T orm.Model](idParam string) gin.HandlerFunc {
 
 		dest, err := getModelByID[T](c, idParam, options...)
 		if err != nil {
+			logger.WithContext(c).WithError(err).
+				Warn("GetByIDHandler: getModelByID failed")
 			ResponseError(c, CodeProcessFailed, err)
 			return
 		}
@@ -77,18 +88,23 @@ func GetFieldHandler[T orm.Model](idParam string, field string) gin.HandlerFunc 
 	return func(c *gin.Context) {
 		var request GetRequestBody
 		if err := c.ShouldBind(&request); err != nil {
+			logger.WithContext(c).WithError(err).
+				Warn("GetFieldHandler: bind request failed")
 			ResponseError(c, CodeBadRequest, err)
 			return
 		}
 
 		model, err := getModelByID[T](c, idParam, service.PreloadAll())
 		if err != nil {
+			logger.WithContext(c).WithError(err).
+				Warn("GetFieldHandler: getModelByID failed")
 			ResponseError(c, CodeProcessFailed, err)
 			return
 		}
 
 		//field := strings.ToUpper(field)[:1] + field[1:]
 		field := NameToField(field, model)
+
 		fieldValue := reflect.ValueOf(model).
 			Elem(). // because model is a pointer
 			FieldByName(field)
@@ -127,18 +143,20 @@ func getModelByID[T orm.Model](c *gin.Context, idParam string, options ...servic
 
 	id := c.Param(idParam)
 	if id == "" {
+		logger.WithContext(c).WithField("idParam", idParam).
+			Warn("getModelByID: id is empty")
 		return &model, ErrMissingID
 	}
 
-	err := service.GetByID[T](id, &model, options...)
+	err := service.GetByID[T](c, id, &model, options...)
 	return &model, err
 }
 
-func getCount[T any](filterBy string, filterValue any) (total int64, err error) {
+func getCount[T any](ctx context.Context, filterBy string, filterValue any) (total int64, err error) {
 	var option []service.QueryOption
 	if filterBy != "" && filterValue != "" {
 		option = append(option, service.FilterBy(filterBy, filterValue))
 	}
-	total, err = service.Count[T](option...)
+	total, err = service.Count[T](ctx, option...)
 	return total, err
 }

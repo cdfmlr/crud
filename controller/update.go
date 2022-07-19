@@ -15,30 +15,44 @@ func UpdateHandler[T orm.Model](idParam string) gin.HandlerFunc {
 
 		id := c.Param(idParam) // NOTICE: id is a string
 		if id == "" {
+			logger.WithContext(c).WithField("idParam", idParam).
+				Warn("UpdateHandler: Missing id")
 			ResponseError(c, CodeBadRequest, ErrMissingID)
 			return
 		}
 
-		if err := service.GetByID[T](id, &model); err != nil {
+		if err := service.GetByID[T](c, id, &model); err != nil {
+			logger.WithContext(c).WithError(err).
+				Warn("UpdateHandler: GetByID failed")
 			ResponseError(c, CodeNotFound, err)
 			return
 		}
 
 		var updatedModel = model
 		if err := c.ShouldBindJSON(&updatedModel); err != nil {
+			logger.WithContext(c).WithError(err).
+				Warn("UpdateHandler: Bind failed")
 			ResponseError(c, CodeBadRequest, err)
 			return
 		}
-		log.Logger.Debugf("UpdateHandler: Update %#v, id=%v", updatedModel, id)
+
+		log.Logger.Tracef("UpdateHandler: Update %#v, id=%v", updatedModel, id)
+
 		_, oldID := model.Identity()
 		_, newID := updatedModel.Identity()
 		if oldID != newID {
+			logger.WithContext(c).WithField("idParam", idParam).
+				WithField("oldID", oldID).
+				WithField("newID", newID).
+				Warn("UpdateHandler: id mismatch: cannot update id")
 			ResponseError(c, CodeBadRequest, ErrUpdateID)
 			return
 		}
 
-		_, err := service.Update(&updatedModel)
+		_, err := service.Update(c, &updatedModel)
 		if err != nil {
+			logger.WithContext(c).WithError(err).
+				Warn("UpdateHandler: Update failed")
 			ResponseError(c, CodeProcessFailed, err)
 			return
 		}

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"github.com/cdfmlr/crud/log"
 	"github.com/cdfmlr/crud/orm"
 	"github.com/cdfmlr/crud/service"
 	"github.com/gin-gonic/gin"
@@ -14,12 +13,16 @@ func CreateHandler[T any]() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var model T
 		if err := c.ShouldBindJSON(&model); err != nil {
-			ResponseError(c, CodeBadRequest, ErrBindFailed)
+			logger.WithContext(c).WithError(err).
+				Warn("CreateHandler: Bind failed")
+			ResponseError(c, CodeBadRequest, err)
 			return
 		}
-		log.Logger.Debugf("CreateHandler: Create %#v", model)
-		err := service.Create(&model, service.IfNotExist())
+		logger.WithContext(c).Tracef("CreateHandler: Create %#v", model)
+		err := service.Create(c, &model, service.IfNotExist())
 		if err != nil {
+			logger.WithContext(c).WithError(err).
+				Warn("CreateHandler: Create failed")
 			ResponseError(c, CodeProcessFailed, err)
 			return
 		}
@@ -41,14 +44,22 @@ func CreateNestedHandler[P orm.Model, T orm.Model](parentIDRouteParam string, fi
 			ResponseError(c, CodeBadRequest, ErrMissingParentID)
 			return
 		}
+
 		var child T
 		if err := c.ShouldBindJSON(&child); err != nil {
-			ResponseError(c, CodeBadRequest, ErrBindFailed)
+			logger.WithContext(c).WithError(err).
+				Warn("CreateNestedHandler: Bind failed")
+			ResponseError(c, CodeBadRequest, err)
 			return
 		}
-		// child id exists: add to join table, but do not update child's fields
+
 		if _, childID := child.Identity(); !reflect.ValueOf(childID).IsZero() {
-			if err := service.GetByID[T](childID, &child); err != nil {
+			// child id exists: add to join table, but do not update child's fields
+			logger.WithField("childID", childID).Debug("CreateNestedHandler: child model has ID, add to join table, but do not update child's fields")
+			if err := service.GetByID[T](c, childID, &child); err != nil {
+				logger.WithContext(c).WithError(err).
+					WithField("note", "try to query it because child id exists in request").
+					Warn("CreateNestedHandler: GetByID[Child] failed")
 				ResponseError(c, CodeNotFound, err)
 				return
 			}
@@ -56,18 +67,23 @@ func CreateNestedHandler[P orm.Model, T orm.Model](parentIDRouteParam string, fi
 		// else: id is not set: create new child
 
 		var parent P
-		if err := service.GetByID[P](parentID, &parent); err != nil {
+		if err := service.GetByID[P](c, parentID, &parent); err != nil {
+			logger.WithContext(c).WithError(err).
+				Warn("CreateNestedHandler: GetByID[Parent] failed")
 			ResponseError(c, CodeNotFound, err)
 			return
 		}
 
-		log.Logger.Debugf("CreateNestedHandler: Create %#v, parent=%#v", child, parent)
+		logger.WithContext(c).
+			Tracef("CreateNestedHandler: Create %#v, parent=%#v", child, parent)
 
 		//field := strings.ToUpper(field)[:1] + field[1:]
 		field := NameToField(field, parent)
-		err := service.Create(&child, service.NestInto(&parent, field))
 
+		err := service.Create(c, &child, service.NestInto(&parent, field))
 		if err != nil {
+			logger.WithContext(c).WithError(err).
+				Warn("CreateNestedHandler: CreateNest failed")
 			ResponseError(c, CodeProcessFailed, err)
 			return
 		}

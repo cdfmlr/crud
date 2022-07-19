@@ -15,7 +15,7 @@ import (
 // from https://github.com/onrik/gorm-logrus
 // modified: add func Use
 type Logger struct {
-	logger                *logrus.Logger
+	logger                *logrus.Entry
 	SlowThreshold         time.Duration
 	SourceField           string
 	SkipErrRecordNotFound bool
@@ -29,8 +29,8 @@ func New() *Logger {
 	}
 }
 
-// Use an existing logrus.Logger for GORM
-func Use(logger *logrus.Logger) *Logger {
+// Use an existing logrus.Entry for GORM
+func Use(logger *logrus.Entry) *Logger {
 	return &Logger{
 		logger: logger,
 	}
