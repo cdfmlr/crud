@@ -40,3 +40,10 @@ func WithRequestID() RouterOption {
 		return router
 	}
 }
+
+func WithMiddleware(middleware ...gin.HandlerFunc) RouterOption {
+	return func(router gin.IRouter) gin.IRouter {
+		router.Use(middleware...)
+		return router
+	}
+}
