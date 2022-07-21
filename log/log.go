@@ -74,7 +74,7 @@ func WithReportCaller(reportCaller bool) LoggerOption {
 
 func WithHook(hook logrus.Hook) LoggerOption {
 	return func(logger *logrus.Logger) {
-		logger.Debugf("WithHook: %v", hook)
+		//logger.Debugf("WithHook: %v", hook)
 		logger.AddHook(hook)
 	}
 }

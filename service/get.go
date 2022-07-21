@@ -133,6 +133,43 @@ func Count[T any](ctx context.Context, options ...QueryOption) (count int64, err
 	return count, ret.Error
 }
 
+// GetAssociations find matched associations (model.field) into dest.
+func GetAssociations(ctx context.Context, model any, field string, dest any, options ...QueryOption) error {
+	logger := logger.WithContext(ctx).
+		WithField("model", fmt.Sprintf("%T", model)).
+		WithField("field", field).
+		WithField("dest", fmt.Sprintf("%T", dest))
+
+	logger.Trace("GetAssociation: Get association into dest")
+
+	err := associationQuery(ctx, model, field, options...).Find(dest)
+	if err != nil {
+		logger.WithError(err).
+			Warn("GetAssociation: Get association into dest failed")
+	}
+	return err
+}
+
+// CountAssociations count matched associations (model.field).
+func CountAssociations(ctx context.Context, model any, field string, options ...QueryOption) (count int64, err error) {
+	logger.WithContext(ctx).
+		WithField("model", fmt.Sprintf("%T", model)).
+		WithField("field", field).
+		Trace("CountAssociations: Count associations")
+
+	count = associationQuery(ctx, model, field, options...).Count()
+	return count, err
+}
+
+// associationQuery builds a gorm association query
+func associationQuery(ctx context.Context, model any, field string, options ...QueryOption) *gorm.Association {
+	query := orm.DB.WithContext(ctx).Model(model)
+	for _, option := range options {
+		query = option(query)
+	}
+	return query.Association(field)
+}
+
 // QueryOption is a function that can be used to construct a query.
 type QueryOption func(tx *gorm.DB) *gorm.DB
 
