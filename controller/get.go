@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"github.com/cdfmlr/crud/orm"
 	"github.com/cdfmlr/crud/service"
 	"github.com/gin-gonic/gin"
@@ -89,14 +88,9 @@ func GetByIDHandler[T orm.Model](idParam string) gin.HandlerFunc {
 //    GET /user/123/order?preload=Product
 // Preloads User.Order.Product instead of User.Product.
 func GetFieldHandler[T orm.Model](idParam string, field string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		logger.WithContext(c).
-			WithField("model", fmt.Sprintf("%T", *new(T))).
-			WithField("idParam", idParam).
-			WithField("field", field).
-			Trace("GetFieldHandler")
+	field = NameToField(field, *new(T))
 
-		// 0. bind request options
+	return func(c *gin.Context) {
 		var request GetRequestBody
 		if err := c.ShouldBind(&request); err != nil {
 			logger.WithContext(c).WithError(err).
@@ -104,79 +98,33 @@ func GetFieldHandler[T orm.Model](idParam string, field string) gin.HandlerFunc 
 			ResponseError(c, CodeBadRequest, err)
 			return
 		}
+		options := buildQueryOptions(request)
 
-		// 1. check the model exists?
-		model, err := getModelByID[T](c, idParam)
+		model, err := getModelByID[T](c, idParam, service.Preload(field, options...))
 		if err != nil {
 			logger.WithContext(c).WithError(err).
 				Warn("GetFieldHandler: getModelByID failed")
 			ResponseError(c, CodeProcessFailed, err)
 			return
 		}
-		logger.WithField("model", model).Debug("GetFieldHandler: model found")
 
-		// 2. find out the field's type F
-		// If F is Struct / *Struct / []Struct,
-		// then we GetAssociations to query it.
-		// Otherwise, we just return field value from getModelByID.
-		field := NameToField(field, model)
-
-		// model.field
 		fieldValue := reflect.ValueOf(model).
 			Elem(). // because model is a pointer
 			FieldByName(field)
 
-		if fieldValue.Type().Kind() == reflect.Ptr {
-			fieldValue = fieldValue.Elem() // *F => F
-		}
-
-		var elemType reflect.Type
-		switch fieldValue.Type().Kind() {
-		case reflect.Slice, reflect.Array:
-			elemType = fieldValue.Type().Elem() // []F => F
-		default:
-			elemType = fieldValue.Type() // keep F
-		}
-		// for []*Struct, we have to unwrap it again
-		if elemType.Kind() == reflect.Ptr {
-			elemType = elemType.Elem() // *F => F
-		}
-
-		//logger.WithField("fieldType", fieldValue.Type().Kind()).
-		//	WithField("elemType", elemType).
-		//	Debug("GetFieldHandler: elemType found")
-
-		if elemType.Kind() != reflect.Struct {
-			// not a model, return the value
-			ResponseSuccess(c, fieldValue.Interface())
-			return
-		}
-
-		// Slice or Struct
-		// 3. GetAssociations
-		dest := fieldValue.Interface()
-		err = service.GetAssociations(c, model, field, &dest, buildQueryOptions(request)...)
-		if err != nil {
-			logger.WithContext(c).WithError(err).
-				Warn("GetFieldHandler: GetAssociations failed")
-			ResponseError(c, CodeProcessFailed, err)
-			return
-		}
-
-		// 4. Count
 		var addition []gin.H
-		if request.Total {
-			total, err := service.CountAssociations(c, model, field, buildQueryOptions(request)...)
+		if request.Total && fieldValue.Kind() == reflect.Slice {
+			total, err := getAssociationCount(c, model, field, request.FilterBy, request.FilterValue)
 			if err != nil {
 				logger.WithContext(c).WithError(err).
-					Warn("GetFieldHandler: CountAssociations failed")
+					Warn("GetFieldHandler: getAssociationCount failed")
 				addition = append(addition, gin.H{"totalError": err.Error()})
 			} else {
 				addition = append(addition, gin.H{"total": total})
 			}
 		}
 
-		ResponseSuccess(c, dest)
+		ResponseSuccess(c, fieldValue.Interface(), addition...)
 	}
 }
 
@@ -220,4 +168,13 @@ func getCount[T any](ctx context.Context, filterBy string, filterValue any) (tot
 	}
 	total, err = service.Count[T](ctx, option...)
 	return total, err
+}
+
+func getAssociationCount(ctx context.Context, model any, field string, filterBy string, filterValue any) (total int64, err error) {
+	var options []service.QueryOption
+	if filterBy != "" && filterValue != "" {
+		options = append(options, service.FilterBy(filterBy, filterValue))
+	}
+	count, err := service.CountAssociations(ctx, model, field, options...)
+	return count, err
 }
