@@ -50,4 +50,5 @@ curl -X DELETE localhost:8086/projects/1/todos/2
 curl 'localhost:8086/todos?filter_by=done&filter_value=1'
 curl -X DELETE localhost:8086/todos/2
 curl  localhost:8086/todos
+curl  'localhost:8086/projects?preload=Todos'
 */

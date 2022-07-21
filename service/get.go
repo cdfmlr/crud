@@ -138,7 +138,7 @@ type QueryOption func(tx *gorm.DB) *gorm.DB
 
 // Preload preloads a relationship (eager loading).
 // It can be applied multiple times (for multiple preloads).
-// And nested preloads (like "User.Sessions") are supported .
+// And nested preloads (like "User.Sessions") are supported.
 func Preload(field string) QueryOption {
 	return func(tx *gorm.DB) *gorm.DB {
 		return tx.Preload(field)
@@ -146,6 +146,7 @@ func Preload(field string) QueryOption {
 }
 
 // PreloadAll to Preload all associations.
+// clause.Associations won’t preload nested associations!
 func PreloadAll() QueryOption {
 	return func(tx *gorm.DB) *gorm.DB {
 		return tx.Preload(clause.Associations)

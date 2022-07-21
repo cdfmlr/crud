@@ -9,14 +9,14 @@ import (
 )
 
 type GetRequestBody struct {
-	Limit       int    `form:"limit"`
-	Offset      int    `form:"offset"`
-	OrderBy     string `form:"order_by"`
-	Descending  bool   `form:"desc"`
-	FilterBy    string `form:"filter_by"`
-	FilterValue string `form:"filter_value"`
-	Preload     bool   `form:"preload"`
-	Total       bool   `form:"total"` // return total count ?
+	Limit       int      `form:"limit"`
+	Offset      int      `form:"offset"`
+	OrderBy     string   `form:"order_by"`
+	Descending  bool     `form:"desc"`
+	FilterBy    string   `form:"filter_by"`
+	FilterValue string   `form:"filter_value"`
+	Preload     []string `form:"preload"` // fields to preload
+	Total       bool     `form:"total"`   // return total count ?
 }
 
 // GetListHandler handles
@@ -131,8 +131,9 @@ func buildQueryOptions[T any](request GetRequestBody) []service.QueryOption {
 	if request.FilterBy != "" && request.FilterValue != "" {
 		options = append(options, service.FilterBy(request.FilterBy, request.FilterValue))
 	}
-	if request.Preload {
-		options = append(options, service.PreloadAll())
+	for _, field := range request.Preload {
+		logger.WithField("field", field).Debug("Preload field")
+		options = append(options, service.Preload(field))
 	}
 	return options
 }
