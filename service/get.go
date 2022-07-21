@@ -176,9 +176,17 @@ type QueryOption func(tx *gorm.DB) *gorm.DB
 // Preload preloads a relationship (eager loading).
 // It can be applied multiple times (for multiple preloads).
 // And nested preloads (like "User.Sessions") are supported.
-func Preload(field string) QueryOption {
+//
+// Passing QueryOptions to custom preloading SQL, see
+// https://gorm.io/docs/preload.html#Custom-Preloading-SQL
+func Preload(field string, options ...QueryOption) QueryOption {
 	return func(tx *gorm.DB) *gorm.DB {
-		return tx.Preload(field)
+		return tx.Preload(field, func(tx *gorm.DB) *gorm.DB {
+			for _, option := range options {
+				tx = option(tx)
+			}
+			return tx
+		})
 	}
 }
 
