@@ -1,3 +1,5 @@
+![header-image](img/header-image.png)
+
 # crud
 
 Crud is a golang package helps writing CRUD servers.
@@ -98,10 +100,10 @@ support:
 
 ```go
 type BasicModel struct {
-ID        uint `gorm:"primary_key"`
-CreatedAt time.Time
-UpdatedAt time.Time
-DeletedAt *time.Time `sql:"index"`
+    ID        uint `gorm:"primary_key"`
+    CreatedAt time.Time
+    UpdatedAt time.Time
+    DeletedAt *time.Time `sql:"index"`
 }
 ```
 
@@ -125,12 +127,12 @@ GET /todos/:id        # get a todo by id
 
 POST /todos           # create new todo record
 {
-	"title": "clean my room"
+    "title": "clean my room"
 }
 
 PUT /todos/:id        # update a todo record
 {
-	"done": true
+    "done": true
 }
 
 DELETE /todos/:id     # delete a todo record
@@ -142,7 +144,7 @@ BTW, the type parameter `Todo` is required. It's not inferable for the compiler.
 model `Todo` in the model `Project`, that is, CRUD for the `Project.Todos`
 field:
 
-```
+```sh
 GET    /projects/:ProjectID/todos          # get associated todos list
 
 POST   /projects/:ProjectID/todos          # create new associated relationship
@@ -193,5 +195,4 @@ The implementation of crud is inspired by the layered MVC architecture:
 
 Each layer is a package. And with generics and reflection in Go,
 crud achieve generic implementations for each layer.
-
 
