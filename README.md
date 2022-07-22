@@ -2,7 +2,7 @@
 
 # crud
 
-Crud is a golang package helps writing CRUD servers.
+Crud is a golang package that helps writing CRUD servers.
 With this package, all you need is models,
 while all the rest is done for you automatically.
 
@@ -12,7 +12,7 @@ while all the rest is done for you automatically.
 > [Viper](https://github.com/spf13/viper) + 
 > automatic CRUD service
 
-## Get start
+## Get started
 
 0. get the package:
 
@@ -20,7 +20,7 @@ while all the rest is done for you automatically.
 go get -u github.com/cdfmlr/crud
 ```
 
-1. all you need is models, and register them in orm & router:
+1. all you need are models, and register them in orm & router:
 
 ```go
 package main
@@ -88,7 +88,7 @@ Let's explain it.
 `crud/orm` is an ORM package works as crud's DAO layer. It's a wrapper of GORM
 with responsibility for database connection and auto migrate.
 
-`orm.ConnectDB` is used to connect to database. It's a wrapper of `gorm.Open`.
+`orm.ConnectDB` is used to connect to a database. It's a wrapper of `gorm.Open`.
 And `orm.RegisterModel` is used to register your models, which
 calls `gorm.AutoMigrate` to build the tables.
 
@@ -107,7 +107,7 @@ type BasicModel struct {
 }
 ```
 
-For most cases, you can just embed `orm.BasicModel` to your model. It's a good
+In most cases, you can just embed `orm.BasicModel` to your model. It's a good
 starting point.
 
 ### router
@@ -125,7 +125,7 @@ GET /todos            # get todos list
 
 GET /todos/:id        # get a todo by id
 
-POST /todos           # create new todo record
+POST /todos           # create a new todo record
 {
     "title": "clean my room"
 }
@@ -160,7 +160,7 @@ DELETE /projects/:ProjectID/todos/:TodoID  # delete an associated relationship
 
 For an extremely simple project, like todolist above, using `crud/orm`
 and `crud/router` together is enough to make API jobs done.
-But for a more real world case, you may want to use lower level parts of `crud`
+But for a more real-world case, you may want to use lower level parts of `crud`
 to build your own CRUD API services:
 
 - `crud/controller`: Package controller implements model based generic CRUD
@@ -194,5 +194,5 @@ The implementation of crud is inspired by the layered MVC architecture:
 | orm        | DAO: R/Ws to the database                       |
 
 Each layer is a package. And with generics and reflection in Go,
-crud achieve generic implementations for each layer.
+crud achieves generic implementations for each layer.
 
