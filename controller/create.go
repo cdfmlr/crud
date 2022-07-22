@@ -9,6 +9,15 @@ import (
 
 // CreateHandler handles
 //    POST /T
+// creates a new model T, responds with the created model T if successful.
+//
+// Request body:
+//  - {...}  // fields of the model T
+//
+// Response:
+//  - 200 OK: { T: {...} }
+//  - 400 Bad Request: { error: "request band failed" }
+//  - 422 Unprocessable Entity: { error: "create process failed" }
 func CreateHandler[T any]() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var model T
@@ -37,6 +46,14 @@ func CreateHandler[T any]() gin.HandlerFunc {
 //  - parentIDRouteParam is the route param name of the parent model P
 //  - field is the field name of the child model T in the parent model P
 // responds with the updated parent model P
+//
+// Request body:
+//  - {...}  // fields of the child model T
+//
+// Response:
+//  - 200 OK: { P: {...} }
+//  - 400 Bad Request: { error: "request band failed" }
+//  - 422 Unprocessable Entity: { error: "create process failed" }
 func CreateNestedHandler[P orm.Model, T orm.Model](parentIDRouteParam string, field string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		parentID := c.Param(parentIDRouteParam)
@@ -78,7 +95,7 @@ func CreateNestedHandler[P orm.Model, T orm.Model](parentIDRouteParam string, fi
 			Tracef("CreateNestedHandler: Create %#v, parent=%#v", child, parent)
 
 		//field := strings.ToUpper(field)[:1] + field[1:]
-		field := NameToField(field, parent)
+		field := nameToField(field, parent)
 
 		err := service.Create(c, &child, service.NestInto(&parent, field))
 		if err != nil {

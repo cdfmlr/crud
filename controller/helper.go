@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// NameToField converts name to the right field name in the structure.
+// nameToField converts name to the right field name in the structure.
 // For example:
 //    type User struct {
 //        ID int
@@ -13,7 +13,7 @@ import (
 //    }
 //    fieldId   := NameToFieldOf[User]("id")   // fieldId   == "ID"
 //    fieldName := NameToFieldOf[User]("name") // fieldName == "Name"
-func NameToField(name string, structure any) string {
+func nameToField(name string, structure any) string {
 	reflectType := reflect.TypeOf(structure)
 
 	if reflectType.Kind() == reflect.Ptr {

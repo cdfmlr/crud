@@ -1,4 +1,0 @@
-# crud
-
-A golang package helps writing CRUD servers powered by GORM and Gin.
-

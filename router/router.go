@@ -24,8 +24,11 @@ func NewRouter(options ...RouterOption) *gin.Engine {
 	return router
 }
 
+// RouterOption is an option to construct the router.
 type RouterOption func(router gin.IRouter) gin.IRouter
 
+// AllowAllCors allows all origins, methods and headers.
+// It's useful for dev. And it is not recommended for the production.
 func AllowAllCors() RouterOption {
 	return func(router gin.IRouter) gin.IRouter {
 		logger.Warn("AllowAllCors: Cors is enabled, this is a security risk!")
@@ -34,6 +37,9 @@ func AllowAllCors() RouterOption {
 	}
 }
 
+// WithRequestID adds the gin_request_id.RequestID() middleware,
+// which adds a request_id in the context for each request.
+// And the request_id will be writen to the X-Request-Id response header.
 func WithRequestID() RouterOption {
 	return func(router gin.IRouter) gin.IRouter {
 		router.Use(gin_request_id.RequestID())
@@ -41,6 +47,7 @@ func WithRequestID() RouterOption {
 	}
 }
 
+// WithMiddleware adds custom middlewares to the router.
 func WithMiddleware(middleware ...gin.HandlerFunc) RouterOption {
 	return func(router gin.IRouter) gin.IRouter {
 		router.Use(middleware...)

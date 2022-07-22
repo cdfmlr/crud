@@ -9,6 +9,16 @@ import (
 
 // UpdateHandler handles
 //    PUT /T/:idParam
+// Updates the model T with the given id.
+//
+// Request body:
+//  - {"field": "new_value", ...}   // fields to update
+//
+// Response:
+//  - 200 OK: { updated: true }
+//  - 400 Bad Request: { error: "missing id or bind fields failed" }
+//  - 404 Not Found: { error: "record with id not found" }
+//  - 422 Unprocessable Entity: { error: "update process failed" }
 func UpdateHandler[T orm.Model](idParam string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var model T

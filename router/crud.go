@@ -47,6 +47,12 @@ func Crud[T orm.Model](base gin.IRouter, relativePath string, options ...CrudOpt
 	return group
 }
 
+// CrudOption is options to construct the router group.
+//
+// By adding GetNested, CreateNested, DeleteNested to Crud,
+// you can add CRUD routes for a nested model (Parent.Child).
+//
+// Or use CrudNested to add all three options above.
 type CrudOption func(group *gin.RouterGroup) *gin.RouterGroup
 
 // crud add CRUD routes for model T to the group:

@@ -6,11 +6,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// XXX: I dont think it's reasonable to (ab)use functional option pattern here
-//      to handle different kinds of creates (CreateMode). It is a temporary
-//      solution and should be replaced by seperated functions, say,
-//      Create(model) and CreateNested(parentID, field, child).
-
 // Create creates a model in the database.
 // Nested models associated with the model will be created as well.
 //
@@ -30,6 +25,14 @@ func Create(ctx context.Context, model any, in CreateMode) error {
 	return in(ctx, model)
 }
 
+// CreateMode is the way to create a model:
+//  - IfNotExist: creates a model if it does not exist.
+//  - NestInto: creates a nested model of the parent model.
+//
+// TODO: I dont think it's reasonable to (ab)use functional option pattern here
+//      to handle different kinds of creates (CreateMode). It is a temporary
+//      solution and should be replaced by seperated functions, say,
+//      Create(model) and CreateNested(parentID, field, child).
 type CreateMode func(ctx context.Context, modelToCreate any) error
 
 // NestInto creates a nested model of the parent model in the database.

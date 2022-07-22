@@ -8,7 +8,17 @@ import (
 	"reflect"
 )
 
-type GetRequestBody struct {
+// GetRequestOptions is the query options (?opt=val) for GET requests:
+//
+//     limit=10&offset=4&                 # pagination
+//     order_by=id&desc=true&             # ordering
+//     filter_by=name&filter_value=John&  # filtering
+//     total=true&                        # return total count (all available records under the filter, ignoring pagination)
+//     preload=Product&preload=Product.Manufacturer  # preloading: loads nested models as well
+//
+// It is used in GetListHandler, GetByIDHandler and GetFieldHandler, to bind
+// the query parameters in the GET request url.
+type GetRequestOptions struct {
 	Limit       int      `form:"limit"`
 	Offset      int      `form:"offset"`
 	OrderBy     string   `form:"order_by"`
@@ -20,10 +30,19 @@ type GetRequestBody struct {
 }
 
 // GetListHandler handles
-//    GET /T?limit=10&offset=0&order_by=id&desc=true&filter_by=name&filter_value=John&total=true
+//    GET /T
+// It returns a list of models.
+//
+// QueryOptions (See GetRequestOptions for more details):
+//    limit, offset, order_by, desc, filter_by, filter_value, preload, total.
+//
+// Response:
+//  - 200 OK: { Ts: [{...}, ...] }
+//  - 400 Bad Request: { error: "request band failed" }
+//  - 422 Unprocessable Entity: { error: "get process failed" }
 func GetListHandler[T any]() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var request GetRequestBody
+		var request GetRequestOptions
 		if err := c.ShouldBind(&request); err != nil {
 			logger.WithContext(c).WithError(err).
 				Warn("GetListHandler: bind request failed")
@@ -59,9 +78,16 @@ func GetListHandler[T any]() gin.HandlerFunc {
 
 // GetByIDHandler handles
 //    GET /T/:idParam
+//
+// QueryOptions (See GetRequestOptions for more details): preload
+//
+// Response:
+//  - 200 OK: { T: {...} }
+//  - 400 Bad Request: { error: "request band failed" }
+//  - 422 Unprocessable Entity: { error: "get process failed" }
 func GetByIDHandler[T orm.Model](idParam string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var request GetRequestBody
+		var request GetRequestOptions
 		if err := c.ShouldBind(&request); err != nil {
 			logger.WithContext(c).WithError(err).
 				Warn("GetByIDHandler: bind request failed")
@@ -84,14 +110,22 @@ func GetByIDHandler[T orm.Model](idParam string) gin.HandlerFunc {
 
 // GetFieldHandler handles
 //    GET /T/:idParam/field
-// All GetRequestBody will be conditions for the field, for example:
+//
+// QueryOptions (See GetRequestOptions for more details):
+//    limit, offset, order_by, desc, filter_by, filter_value, preload, total.
+// Notice, all GetRequestOptions will be conditions for the field, for example:
 //    GET /user/123/order?preload=Product
 // Preloads User.Order.Product instead of User.Product.
+//
+// Response:
+//  - 200 OK: { Fs: [{...}, ...] }  // field models
+//  - 400 Bad Request: { error: "request band failed" }
+//  - 422 Unprocessable Entity: { error: "get process failed" }
 func GetFieldHandler[T orm.Model](idParam string, field string) gin.HandlerFunc {
-	field = NameToField(field, *new(T))
+	field = nameToField(field, *new(T))
 
 	return func(c *gin.Context) {
-		var request GetRequestBody
+		var request GetRequestOptions
 		if err := c.ShouldBind(&request); err != nil {
 			logger.WithContext(c).WithError(err).
 				Warn("GetFieldHandler: bind request failed")
@@ -128,7 +162,7 @@ func GetFieldHandler[T orm.Model](idParam string, field string) gin.HandlerFunc 
 	}
 }
 
-func buildQueryOptions(request GetRequestBody) []service.QueryOption {
+func buildQueryOptions(request GetRequestOptions) []service.QueryOption {
 	var options []service.QueryOption
 	if request.Limit > 0 {
 		options = append(options, service.WithPage(request.Limit, request.Offset))

@@ -8,6 +8,14 @@ import (
 
 // DeleteHandler handles
 //    DELETE /T/:idParam
+// Deletes the model T with the given id.
+//
+// Request body: none
+//
+// Response:
+//  - 200 OK: { deleted: true }
+//  - 400 Bad Request: { error: "missing id" }
+//  - 422 Unprocessable Entity: { error: "delete process failed" }
 func DeleteHandler[T orm.Model](idParam string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param(idParam)
@@ -37,6 +45,13 @@ func DeleteHandler[T orm.Model](idParam string) gin.HandlerFunc {
 //  - parentIdParam is the route param name of the parent model P
 //  - childIdParam is the route param name of the child model T in the parent model P
 //  - field is the field name of the child model T in the parent model P
+//
+// Request body: none
+//
+// Response:
+//  - 200 OK: { deleted: true }
+//  - 400 Bad Request: { error: "missing id" }
+//  - 422 Unprocessable Entity: { error: "delete process failed" }
 func DeleteNestedHandler[P orm.Model, T orm.Model](parentIdParam string, field string, childIdParam string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		parentId := c.Param(parentIdParam)
@@ -56,7 +71,7 @@ func DeleteNestedHandler[P orm.Model, T orm.Model](parentIdParam string, field s
 			return
 		}
 		//field := strings.ToUpper(field)[:1] + field[1:]
-		field := NameToField(field, new(P))
+		field := nameToField(field, new(P))
 
 		logger.WithContext(c).
 			Tracef("DeleteNestedHandler: Delete %v of %v, parentId=%v, field=%v, childId=%v", *new(T), *new(P), parentId, field, childId)

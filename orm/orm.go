@@ -23,7 +23,15 @@ var DB *gorm.DB
 
 var logger = log.ZoneLogger("crud/orm")
 
-// ConnectDB initializes the global DB instance
+// ConnectDB connects to the database and initializes the global crud.DB
+// instance. The driver should be one of the following:
+//    DBDriverMySQL, DBDriverSqlite, DBDriverPostgres
+// And the dsn is depends on the driver:
+//  - DBDriverSqlite: gorm.db
+//  - DBDriverMySQL: user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local
+//  - DBDriverPostgres: host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai
+// See GORM docs for more information:
+// - https://gorm.io/docs/connecting_to_the_database.html
 func ConnectDB(driver DBDriver, dsn string) (*gorm.DB, error) {
 	var err error
 
@@ -45,7 +53,7 @@ func ConnectDB(driver DBDriver, dsn string) (*gorm.DB, error) {
 // 	- gorm.io/driver/sqlite:   https://github.com/go-gorm/sqlite/blob/1d1e7723862758a6e6a860f90f3e7a3bea9cc94a/sqlite.go#L28
 type DBOpener func(dsn string) gorm.Dialector
 
-// 获取连接某种数据库的驱动
+// get DBOpener for the given driver
 func getDBOpener(driver DBDriver) DBOpener {
 	switch driver {
 	case DBDriverMySQL:
@@ -64,6 +72,10 @@ func getDBOpener(driver DBDriver) DBOpener {
 
 // endregion dbOpener
 
+// RegisterModel registers the given model to the database.
+// Arguments should be pointers to model structs.
+//
+// It calls gorm.AutoMigrate to migrate the database.
 func RegisterModel(m ...any) error {
 	err := DB.AutoMigrate(m...)
 	if err != nil {
