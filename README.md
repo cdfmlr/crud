@@ -2,6 +2,8 @@
 
 # crud
 
+English | [机翻中文](README-zh_CN.md)
+
 Crud is a golang package that helps writing CRUD servers.
 With this package, all you need is models,
 while all the rest is done for you automatically.
@@ -174,11 +176,15 @@ to build your own CRUD API services:
 - `crud/log` is a package that helps you to log your application. It's a wrapper
   of [logrus](https://github.com/sirupsen/logrus)
 
-Example:
+**Documents**:
 
-[sshman](https://github.com/cdfmlr/sshman) is a more real world example of how
-crud can help you build a CRUD REST API project fast and easily. Please check
-it out.
+- [go doc](https://pkg.go.dev/github.com/cdfmlr/crud)
+
+**Examples**:
+
+- [sshman](https://github.com/cdfmlr/sshman) is a more real world example of how
+  crud can help you build a CRUD REST API project fast and easily. Please check
+  it out.
 
 ## How it works
 
@@ -196,3 +202,12 @@ The implementation of crud is inspired by the layered MVC architecture:
 Each layer is a package. And with generics and reflection in Go,
 crud achieves generic implementations for each layer.
 
+## TODOs
+
+- [ ] tests for services and controllers
+- [ ] updates depended Gin/GORM/... packages automaticly (dependabot)
+- [ ] ...
+
+## MIT License
+
+Copyright (c) 2022 CDFMLR
