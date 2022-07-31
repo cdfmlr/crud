@@ -179,7 +179,7 @@ crud 的实现是受分层 MVC 架构的启发：
 ## TODOs
 
 - [ ] 自动化测试
-- [ ] 自动更新依赖的Gin/GORM/...包（dependabot）
+- [x] 自动更新依赖的Gin/GORM/...包（dependabot）
 - [ ] ...
 
 ## MIT License

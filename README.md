@@ -205,7 +205,7 @@ crud achieves generic implementations for each layer.
 ## TODOs
 
 - [ ] tests for services and controllers
-- [ ] updates depended Gin/GORM/... packages automaticly (dependabot)
+- [x] updates depended Gin/GORM/... packages automaticly (dependabot)
 - [ ] ...
 
 ## MIT License
