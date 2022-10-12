@@ -4,6 +4,8 @@
 
 English | [机翻中文](README-zh_CN.md)
 
+[![Go Reference Badge](https://pkg.go.dev/badge/github.com/cdfmlr/crud.svg)](https://pkg.go.dev/github.com/cdfmlr/crud) [![Go Report Badge](https://goreportcard.com/badge/github.com/cdfmlr/crud)](https://goreportcard.com/report/github.com/cdfmlr/crud)
+
 Crud is a golang package that helps writing CRUD servers.
 With this package, all you need is models,
 while all the rest is done for you automatically.
