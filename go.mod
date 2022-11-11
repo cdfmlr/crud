@@ -9,7 +9,7 @@ require (
 	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.13.0
-	gorm.io/driver/mysql v1.3.6
+	gorm.io/driver/mysql v1.4.4
 	gorm.io/driver/postgres v1.3.9
 	gorm.io/driver/sqlite v1.3.6
 	gorm.io/gorm v1.23.8
