@@ -3,7 +3,7 @@ module github.com/cdfmlr/crud
 go 1.18
 
 require (
-	github.com/fsnotify/fsnotify v1.5.4
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/gofrs/uuid v4.4.0+incompatible
